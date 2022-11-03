@@ -1,34 +1,15 @@
-# Compiled class file
-*.class
-
-# Log file
-*.log
-
-# BlueJ files
-*.ctxt
-
-# Build files
-build/
-
-# Out files
-out/
-
-# Mobile Tools for Java (J2ME)
-.mtj.tmp/
-
-# Package Files #
-*.war
-*.nar
-*.ear
-
-# Other file
 *.iml
+.gradle
 /local.properties
-/.idea/workspace.xml
+/.idea/caches
 /.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
 .DS_Store
+/build
 /captures
 .externalNativeBuild
-
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
-hs_err_pid*
+.cxx
+local.properties

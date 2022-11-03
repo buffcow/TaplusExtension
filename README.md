@@ -1,0 +1,2 @@
+# FuckContentExtension
+去你的MIUI传送门小米浏览器和搜索
