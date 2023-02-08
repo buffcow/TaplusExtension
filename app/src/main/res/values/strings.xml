@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">TaplusExtension</string>
+    <string name="toast_copyall_success">All copied</string>
+    <string name="search_engine_title">Search engine</string>
+    <string name="custom_search_title">Custom search engine</string>
+    <string name="xposed_description">MIUI taplus enhance module. Coolapk@yangyiyu08</string>
+</resources>

@@ -1,17 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <application
-        android:label="FuckContentExtension"
-        tools:ignore="MissingApplicationIcon">
+        android:icon="@drawable/ic_launcher"
+        android:label="@string/app_name">
         <meta-data
             android:name="xposedmodule"
             android:value="true" />
 
         <meta-data
             android:name="xposeddescription"
-            android:value="仅适用于MIUI，去你的传送门小米浏览器和搜索\n酷安@yangyiyu08" />
+            android:resource="@string/xposed_description" />
 
         <meta-data
             android:name="xposedminversion"

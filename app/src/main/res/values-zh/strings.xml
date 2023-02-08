@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">传送门增强</string>
+    <string name="search_engine_title">搜索引擎</string>
+    <string name="toast_copyall_success">已批量复制</string>
+    <string name="custom_search_title">自定义搜索引擎</string>
+    <string name="xposed_description">MIUI传送门增强。\n酷安@yangyiyu08</string>
+</resources>
