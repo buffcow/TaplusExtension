@@ -19,10 +19,10 @@ internal object SettingsHoker : YukiBaseHooker() {
     override fun onHook() {
         "$packageName.setting.fragment.MainSettingsFragment".hook {
             injectMember {
-                method { name = "initPreferences" }
+                method { name = "initPreferences"; emptyParam() }
                 afterHook {
                     val preCategory = getObjectField(instance, "mCommonSettingsCategory")
-                    (getObjectField(instance, "mContext") as Context).let {
+                    (callMethod(preCategory, "getContext") as Context).let {
                         addSearchEnginPref(it, preCategory, instance)
                         addCustomSearchPref(it, preCategory)
                     }

@@ -70,7 +70,7 @@ internal object UtilsHoker : YukiBaseHooker() {
     private fun hookImageUtil() {
         "$packageName.utils.SuperImageUtils".hook {
             injectMember {
-                method { name = "isSupportSuperImage" }
+                method { name = "isSupportSuperImage"; emptyParam() }
                 replaceToTrue()
             }
         }.ignoredHookClassNotFoundFailure() // less than 2.3.6
