@@ -28,7 +28,7 @@ internal object RecognitionHooker : YukiBaseHooker() {
             injectMember {
                 method { name = "isMatchCharAndNum"; param(String::class.java, String::class.java) }
                 replaceToFalse()
-            }
+            }.ignoredNoSuchMemberFailure()
         }
     }
 
