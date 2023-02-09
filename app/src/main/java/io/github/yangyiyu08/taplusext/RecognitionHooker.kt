@@ -19,8 +19,18 @@ import kotlin.concurrent.thread
  */
 internal object RecognitionHooker : YukiBaseHooker() {
     override fun onHook() {
+        screenLandscapeCtrl()
         deleteSelectedWordsSpace()
         setLongClickToCopySegments()
+    }
+
+    private fun screenLandscapeCtrl() {
+        "$packageName.services.TextContentExtensionService".hook {
+            injectMember {
+                method { name = "isScreenPortrait"; emptyParam() }
+                beforeHook { if (TaplusConfig.isEnableLandscape(appContext!!)) result = true }
+            }
+        }
     }
 
     private fun deleteSelectedWordsSpace() {

@@ -22,9 +22,13 @@ internal object SettingsHoker : YukiBaseHooker() {
                 method { name = "initPreferences"; emptyParam() }
                 afterHook {
                     val preCategory = getObjectField(instance, "mCommonSettingsCategory")
-                    (callMethod(preCategory, "getContext") as Context).let {
-                        addSearchEnginPref(it, preCategory, instance)
-                        addCustomSearchPref(it, preCategory)
+                    (callMethod(preCategory, "getContext") as Context).let { ctx ->
+                        addEnableLandscapePref(ctx)
+                        addSearchEnginPref(ctx, instance)
+                        addCustomSearchPref(ctx)
+                    }
+                    prefProxyMap.values.forEach {
+                        it?.let { callMethod(preCategory, "addPreference", it.get()) }
                     }
                 }
             }
@@ -49,7 +53,17 @@ internal object SettingsHoker : YukiBaseHooker() {
         }
     }
 
-    private fun addSearchEnginPref(ctx: Context, preCategory: Any, instance: Any) {
+    private fun addEnableLandscapePref(ctx: Context) {
+        val enableLandscapePref = CheckBoxPreference(ctx).apply {
+            setKey(TaplusConfig.PREF_ENABLE_LANDSCAPE)
+            setOrder(1)
+            setTitle(moduleAppResources.getString(R.string.enable_landscape_title))
+        }
+
+        prefProxyMap[TaplusConfig.PREF_ENABLE_LANDSCAPE] = enableLandscapePref
+    }
+
+    private fun addSearchEnginPref(ctx: Context, instance: Any) {
         val searchEnginPref = DropDownPreference(ctx).apply {
             setOrder(2)
             setKey(TaplusConfig.PREF_SEARCH_ENGINE)
@@ -62,10 +76,9 @@ internal object SettingsHoker : YukiBaseHooker() {
         }
 
         prefProxyMap[TaplusConfig.PREF_SEARCH_ENGINE] = searchEnginPref
-        callMethod(preCategory, "addPreference", searchEnginPref.get())
     }
 
-    private fun addCustomSearchPref(ctx: Context, preCategory: Any) {
+    private fun addCustomSearchPref(ctx: Context) {
         val customSearchPref = EditTextPreference(ctx).apply {
             setOrder(3)
             setKey(TaplusConfig.PREF_CUSTOM_SEARCH)
@@ -77,7 +90,6 @@ internal object SettingsHoker : YukiBaseHooker() {
         customSearchPref.setVisible(KEY_CUSTOM == seachEnginePref?.getValue())
 
         prefProxyMap[TaplusConfig.PREF_CUSTOM_SEARCH] = customSearchPref
-        callMethod(preCategory, "addPreference", customSearchPref.get())
     }
 
     private class DropDownPreference(ctx: Context?) : PreferenceProxy(ctx, "miui", "DropDown") {
@@ -103,6 +115,8 @@ internal object SettingsHoker : YukiBaseHooker() {
             text?.let { callMethod(mInstance, "setText", it) }
         }
     }
+
+    private class CheckBoxPreference(ctx: Context?) : PreferenceProxy(ctx, "android", "CheckBox")
 
     private open class PreferenceProxy(ctx: Context?, pkg: String, name: String) {
         protected val mInstance: Any
