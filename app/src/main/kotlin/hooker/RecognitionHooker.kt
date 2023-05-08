@@ -1,16 +1,19 @@
-package io.github.yangyiyu08.taplusext
+package hooker
 
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.widget.TextView
 import android.widget.Toast
 import com.highcapable.yukihookapi.hook.entity.YukiBaseHooker
-import com.highcapable.yukihookapi.hook.factory.method
+import com.highcapable.yukihookapi.hook.type.java.StringClass
+import config.TaplusConfig
 import de.robv.android.xposed.XposedHelpers.callMethod
 import de.robv.android.xposed.XposedHelpers.callStaticMethod
-import de.robv.android.xposed.XposedHelpers.getObjectField
 import de.robv.android.xposed.XposedHelpers.newInstance
+import io.github.yangyiyu08.taplusext.R
 import kotlin.concurrent.thread
 
 
@@ -21,14 +24,14 @@ internal object RecognitionHooker : YukiBaseHooker() {
     override fun onHook() {
         screenLandscapeCtrl()
         deleteSelectedWordsSpace()
-        setLongClickToCopySegments()
+        hookRecognitionExpandedTextCard()
     }
 
     private fun screenLandscapeCtrl() {
         "$packageName.services.TextContentExtensionService".hook {
             injectMember {
                 method { name = "isScreenPortrait"; emptyParam() }
-                beforeHook { if (TaplusConfig.isEnableLandscape(appContext!!)) result = true }
+                beforeHook { if (TaplusConfig.PREF.isEnableLandscape(appContext!!)) result = true }
             }
         }
     }
@@ -36,18 +39,18 @@ internal object RecognitionHooker : YukiBaseHooker() {
     private fun deleteSelectedWordsSpace() {
         "$packageName.text.adapter.TaplusSegmentAdapter".hook {
             injectMember {
-                method { name = "isMatchCharAndNum"; param(String::class.java, String::class.java) }
+                method { name = "isMatchCharAndNum"; param(StringClass, StringClass) }
                 replaceToFalse()
             }.ignoredNoSuchMemberFailure()
         }
     }
 
-    private fun setLongClickToCopySegments() {
+    private fun hookRecognitionExpandedTextCard() {
         "$packageName.text.cardview.TaplusRecognitionExpandedTextCard".hook {
             injectMember {
                 constructor { paramCount = 3 }
                 afterHook {
-                    val closeTaplus = { ctx: Context ->
+                    fun closeTaplus(ctx: Context) {
                         val event by lazy {
                             newInstance(
                                 "$packageName.text.TaplusServiceCancelEvent".toClass(),
@@ -66,38 +69,48 @@ internal object RecognitionHooker : YukiBaseHooker() {
                         callMethod(bus, "post", event)
                     }
 
-                    val copyAll = { cm: ClipboardManager, words: List<String> ->
+                    fun copyAll(ctx: Context, words: List<String>) {
+                        val cm by lazy {
+                            ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        }
                         thread {
                             words.forEach {
                                 cm.setPrimaryClip(ClipData.newPlainText(null, it))
                                 Thread.sleep(60)
+                            }
+                            Handler(Looper.getMainLooper()).post {
+                                Toast.makeText(
+                                    ctx,
+                                    moduleAppResources.getString(R.string.toast_copyall_success),
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             }
                         }
                     }
 
                     field {
                         name = "mCopy"
-                    }.get(instance).cast<TextView>()?.setOnLongClickListener { view ->
-                        val ctx by lazy { view.context }
-                        val words = getObjectField(instance, "mSegmentAdapter").let {
-                            it.javaClass.method {
+                    }.get(instance).cast<TextView>()?.setOnLongClickListener {
+                        val ctx by lazy { it.context }
+                        val words = field { name = "mSegmentAdapter" }.get(instance)
+                            .current()!!.method {
+                                emptyParam()
                                 name = "getSelectedWordsWithSplit"
-                            }.get(it).invoke<String>()?.split(Regex("\\|\\|"))
-                        }
-
-                        val cm by lazy { ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager }
-                        words?.let {
-                            copyAll(cm, it)
-                            Toast.makeText(
-                                ctx,
-                                moduleAppResources.getString(R.string.toast_copyall_success),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-
+                            }.string().split(Regex.fromLiteral("||"))
+                        copyAll(ctx, words)
                         closeTaplus(ctx)
                         true
                     }
+                }
+            }
+
+            injectMember {
+                method { name = "getSelectedWordsWithBlank"; emptyParam() }
+                replaceAny {
+                    field { name = "mSegmentAdapter" }.get(instance).current()!!.method {
+                        param(StringClass)
+                        name = "getSelectedWordsWithSplit"
+                    }.call("")
                 }
             }
         }
