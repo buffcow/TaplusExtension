@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="search_engines">
+        <item>Default</item>
+        <item>Baidu</item>
+        <item>Sogou</item>
+        <item>Bing</item>
+        <item>Google</item>
+        <item>Custom</item>
+    </string-array>
+
+    <string-array name="search_engine_values">
+        <item>@string/engine_value_defalut</item>
+        <item>https://www.baidu.com/s?wd=%s</item>
+        <item>https://www.sogou.com/web?query=%s</item>
+        <item>https://www.bing.com/search?q=%s</item>
+        <item>https://www.google.com/search?q=%s</item>
+        <item>@string/engine_value_custom</item>
+    </string-array>
+</resources>

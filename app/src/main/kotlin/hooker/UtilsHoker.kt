@@ -1,4 +1,4 @@
-package io.github.yangyiyu08.taplusext
+package hooker
 
 import android.app.SearchManager
 import android.content.Context
@@ -8,6 +8,7 @@ import com.highcapable.yukihookapi.hook.entity.YukiBaseHooker
 import com.highcapable.yukihookapi.hook.type.android.ContextClass
 import com.highcapable.yukihookapi.hook.type.java.StringClass
 import com.highcapable.yukihookapi.hook.type.java.UnitType
+import config.TaplusConfig
 
 
 /**
@@ -28,7 +29,7 @@ internal object UtilsHoker : YukiBaseHooker() {
                     args(0).cast<Context>()?.let { ctx ->
                         val value = args(1).string()
                         ctx.startActivity(Intent().apply {
-                            TaplusConfig.getSearchEngineUrl(ctx)?.let {
+                            TaplusConfig.PREF.getSearchEngineUrl(ctx)?.let {
                                 action = Intent.ACTION_VIEW
                                 data = Uri.parse(String.format(it, value))
                             } ?: run {
@@ -62,7 +63,7 @@ internal object UtilsHoker : YukiBaseHooker() {
                         })
                     }
                 }
-            }
+            }.ignoredNoSuchMemberFailure()
         }
     }
 
