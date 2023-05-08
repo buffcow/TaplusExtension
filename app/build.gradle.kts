@@ -10,7 +10,7 @@ plugins {
 
 val prop by lazy {
     Properties().apply {
-        load(File(rootDir, "local.properties").inputStream())
+        load(rootProject.file("local.properties").inputStream())
     }
 }
 
@@ -21,8 +21,8 @@ android {
     defaultConfig {
         minSdk = 24
         targetSdk = 33
-        versionCode = 7
-        versionName = "1.1.4"
+        versionCode = 8
+        versionName = "1.1.8"
         applicationId = android.namespace
     }
 
@@ -48,17 +48,17 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = "11"
+        jvmTarget = "17"
     }
 }
 
 dependencies {
     compileOnly("de.robv.android.xposed:api:82")
-    ksp("com.highcapable.yukihookapi:ksp-xposed:1.1.8")
-    implementation("androidx.annotation:annotation:1.5.0")
-    implementation("com.highcapable.yukihookapi:api:1.1.8")
+    ksp("com.highcapable.yukihookapi:ksp-xposed:1.1.11")
+    implementation("androidx.annotation:annotation:1.6.0")
+    implementation("com.highcapable.yukihookapi:api:1.1.11")
 }
