@@ -6,6 +6,7 @@ import android.content.Intent
 import android.net.Uri
 import com.highcapable.yukihookapi.hook.entity.YukiBaseHooker
 import com.highcapable.yukihookapi.hook.type.android.ContextClass
+import com.highcapable.yukihookapi.hook.type.java.StringClass
 import com.highcapable.yukihookapi.hook.type.java.UnitType
 
 
@@ -24,11 +25,10 @@ internal object UtilsHoker : YukiBaseHooker() {
             injectMember {
                 method { name = "openGlobalSearch"; paramCount = 3 }
                 replaceUnit {
-                    val context = args(0).cast<Context>()
-                    val value = args(1).cast<String>()
-                    if (context != null && value != null) {
-                        context.startActivity(Intent().apply {
-                            TaplusConfig.getSearchEngineUrl(context)?.let {
+                    args(0).cast<Context>()?.let { ctx ->
+                        val value = args(1).string()
+                        ctx.startActivity(Intent().apply {
+                            TaplusConfig.getSearchEngineUrl(ctx)?.let {
                                 action = Intent.ACTION_VIEW
                                 data = Uri.parse(String.format(it, value))
                             } ?: run {
@@ -41,22 +41,21 @@ internal object UtilsHoker : YukiBaseHooker() {
                 }
             }
             injectMember {
-                method { name = "getIntentWithBrowser"; param(String::class.java) }
+                method { name = "getIntentWithBrowser"; param(StringClass) }
                 afterHook {
-                    result = result<Intent>()?.apply { data = Uri.parse(args(0).cast<String?>()) }
+                    result = result<Intent>()?.apply { data = Uri.parse(args(0).string()) }
                 }
             }
             injectMember {
                 method {
                     name = "openInBrowser"
-                    param(ContextClass, String::class.java)
+                    param(ContextClass, StringClass)
                     returnType = UnitType
                 }
                 replaceUnit {
-                    val context = args(0).cast<Context>()
-                    val uriString = args(1).cast<String>()
-                    if (context != null && uriString != null) {
-                        context.startActivity(Intent().apply {
+                    args(0).cast<Context>()?.let { ctx ->
+                        val uriString = args(1).string()
+                        ctx.startActivity(Intent().apply {
                             data = Uri.parse(uriString)
                             action = Intent.ACTION_VIEW
                             flags = Intent.FLAG_ACTIVITY_NEW_TASK
