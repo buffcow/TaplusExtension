@@ -1,11 +1,12 @@
 @file:Suppress("UnstableApiUsage")
 
+import com.android.build.gradle.internal.api.BaseVariantOutputImpl
 import java.util.Properties
 
 plugins {
+    kotlin("android")
     id("com.android.application")
     id("com.google.devtools.ksp")
-    id("org.jetbrains.kotlin.android")
 }
 
 val prop by lazy {
@@ -56,6 +57,14 @@ android {
     }
     kotlinOptions {
         jvmTarget = "17"
+    }
+
+    applicationVariants.all {
+        outputs.all {
+            val appName = rootProject.name
+            val newApkName = "$appName-${versionName}_$versionCode.apk"
+            (this as BaseVariantOutputImpl).outputFileName = newApkName
+        }
     }
 }
 
