@@ -6,12 +6,11 @@ import com.highcapable.yukihookapi.hook.type.java.BooleanType
 import config.TaplusConfig.ENGINE
 import config.TaplusConfig.PREF
 import de.robv.android.xposed.XposedHelpers.callMethod
-import de.robv.android.xposed.XposedHelpers.getObjectField
 import io.github.yangyiyu08.taplusext.R
 import preference.CheckBoxPreference
 import preference.DropDownPreference
 import preference.EditTextPreference
-import preference.ProxyPreference
+import preference.PreferenceCategory
 
 
 /**
@@ -23,35 +22,30 @@ internal object SettingsHoker : YukiBaseHooker() {
             injectMember {
                 method { name = "initPreferences"; emptyParam() }
                 afterHook {
-                    val preCategory by lazy {
-                        getObjectField(instance, "mCommonSettingsCategory")
+                    val prefScreen by lazy {
+                        callMethod(instance, "getPreferenceScreen")
                     }
 
-                    fun addPreference(pref: ProxyPreference) {
-                        callMethod(preCategory, "addPreference", pref.get())
+                    val ctx by lazy {
+                        callMethod(instance, "getContext") as Context
                     }
 
-                    (callMethod(preCategory, "getContext") as Context).let { ctx ->
-                        val searchEnginPref = getSearchEnginPref(ctx)
-                        val customSearchPref = getCustomSearchPref(ctx)
-                        searchEnginPref.setOnPreferenceChangeListener {
-                            customSearchPref.setVisible(it == ENGINE.CUSTOM)
-                        }
-                        customSearchPref.setVisible(ENGINE.CUSTOM == searchEnginPref.getValue())
+                    val extCategory = createTaplusExtCategory(ctx)
+                    // must be added to screen first
+                    callMethod(prefScreen, "addPreference", extCategory.get())
 
-                        addPreference(searchEnginPref)
-                        addPreference(customSearchPref)
-
-                        addPreference(getEnableLandscapePref(ctx))
-                    }
+                    // then add child prefs to category
+                    extCategory.addPrefsToExtCategory(ctx)
                 }
             }
 
             injectMember {
                 method { name = "enablePrefConfig"; param(BooleanType) }
                 afterHook {
-                    listOf(PREF.SEARCH_ENGINE, PREF.CUSTOM_SEARCH, PREF.ENABLE_LANDSCAPE).forEach {
-                        val pref = callMethod(instance, "findPreference", it)
+                    val screen = callMethod(instance, "findPreference", PREF.EXT_CATEGORY)
+                    val count = callMethod(screen, "getPreferenceCount") as Int
+                    for (i in 0 until count) {
+                        val pref = callMethod(screen, "getPreference", i)
                         callMethod(pref, "setEnabled", args(0).boolean())
                     }
                 }
@@ -59,25 +53,39 @@ internal object SettingsHoker : YukiBaseHooker() {
         }
     }
 
-    private fun getSearchEnginPref(ctx: Context) = DropDownPreference(ctx).apply {
-        setOrder(2)
-        setKey(PREF.SEARCH_ENGINE)
-        setValue(PREF.getSearchEngineValue(ctx))
-        setTitle(moduleAppResources.getString(R.string.search_engine_title))
-        setEntries(moduleAppResources.getStringArray(R.array.search_engines))
-        setEntryValues(moduleAppResources.getStringArray(R.array.search_engine_values))
-    }
-
-    private fun getCustomSearchPref(ctx: Context) = EditTextPreference(ctx).apply {
-        setOrder(3)
-        setKey(PREF.CUSTOM_SEARCH)
-        setText(PREF.getCustomSearchValue(ctx))
-        setTitle(moduleAppResources.getString(R.string.custom_search_title))
-    }
-
-    private fun getEnableLandscapePref(ctx: Context) = CheckBoxPreference(ctx).apply {
+    private fun createTaplusExtCategory(ctx: Context) = PreferenceCategory(ctx).apply {
         setOrder(1)
-        setKey(PREF.ENABLE_LANDSCAPE)
-        setTitle(moduleAppResources.getString(R.string.enable_landscape_title))
+        setKey(PREF.EXT_CATEGORY)
+        setTitle(moduleAppResources.getString(R.string.app_name))
+    }
+
+    private fun PreferenceCategory.addPrefsToExtCategory(ctx: Context) {
+        val enableLandscape = CheckBoxPreference(ctx).apply {
+            setKey(PREF.ENABLE_LANDSCAPE)
+            setTitle(moduleAppResources.getString(R.string.enable_landscape_title))
+        }
+
+        val removeShopping = CheckBoxPreference(ctx).apply {
+            setKey(PREF.REMOVE_SHOPPING)
+            setTitle(moduleAppResources.getString(R.string.remove_shopping_title))
+        }
+
+        val customSearch = EditTextPreference(ctx).apply {
+            setKey(PREF.CUSTOM_SEARCH)
+            setText(PREF.getCustomSearchValue(ctx))
+            setVisible(ENGINE.CUSTOM == PREF.getSearchEngineValue(ctx))
+            setTitle(moduleAppResources.getString(R.string.custom_search_title))
+        }
+
+        val searchEngin = DropDownPreference(ctx).apply {
+            setKey(PREF.SEARCH_ENGINE)
+            setValue(PREF.getSearchEngineValue(ctx))
+            setTitle(moduleAppResources.getString(R.string.search_engine_title))
+            setEntries(moduleAppResources.getStringArray(R.array.search_engines))
+            setEntryValues(moduleAppResources.getStringArray(R.array.search_engine_values))
+            setOnPreferenceChangeListener { customSearch.setVisible(it == ENGINE.CUSTOM) }
+        }
+
+        addPreferences(enableLandscape, removeShopping, searchEngin, customSearch)
     }
 }

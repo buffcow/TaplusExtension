@@ -5,11 +5,17 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import android.view.View
 import android.widget.TextView
 import android.widget.Toast
 import com.highcapable.yukihookapi.hook.entity.YukiBaseHooker
+import com.highcapable.yukihookapi.hook.factory.current
+import com.highcapable.yukihookapi.hook.param.HookParam
+import com.highcapable.yukihookapi.hook.type.android.AttributeSetClass
+import com.highcapable.yukihookapi.hook.type.android.ContextClass
+import com.highcapable.yukihookapi.hook.type.java.IntType
 import com.highcapable.yukihookapi.hook.type.java.StringClass
-import config.TaplusConfig
+import config.TaplusConfig.PREF
 import de.robv.android.xposed.XposedHelpers.callMethod
 import de.robv.android.xposed.XposedHelpers.callStaticMethod
 import de.robv.android.xposed.XposedHelpers.newInstance
@@ -31,7 +37,7 @@ internal object RecognitionHooker : YukiBaseHooker() {
         "$packageName.services.TextContentExtensionService".hook {
             injectMember {
                 method { name = "isScreenPortrait"; emptyParam() }
-                beforeHook { if (TaplusConfig.PREF.isEnableLandscape(appContext!!)) result = true }
+                beforeHook { if (PREF.isEnableLandscape(appContext!!)) result = true }
             }
         }
     }
@@ -46,72 +52,88 @@ internal object RecognitionHooker : YukiBaseHooker() {
     }
 
     private fun hookRecognitionExpandedTextCard() {
-        "$packageName.text.cardview.TaplusRecognitionExpandedTextCard".hook {
-            injectMember {
-                constructor { paramCount = 3 }
-                afterHook {
-                    fun closeTaplus(ctx: Context) {
-                        val event by lazy {
-                            newInstance(
-                                "$packageName.text.TaplusServiceCancelEvent".toClass(),
-                                true,
-                                ctx.hashCode(),
-                                "copy",
-                                "nerwords"
-                            )
-                        }
-                        val bus by lazy {
-                            callStaticMethod(
-                                "org.greenrobot.eventbus.EventBus".toClass(),
-                                "getDefault"
-                            )
-                        }
-                        callMethod(bus, "post", event)
-                    }
+        fun HookParam.addCopyAll() {
+            fun closeTaplus(ctx: Context) {
+                val event by lazy {
+                    newInstance(
+                        "$packageName.text.TaplusServiceCancelEvent".toClass(),
+                        true,
+                        ctx.hashCode(),
+                        "copy",
+                        "nerwords"
+                    )
+                }
 
-                    fun copyAll(ctx: Context, words: List<String>) {
-                        val cm by lazy {
-                            ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        }
-                        thread {
-                            words.forEach {
-                                cm.setPrimaryClip(ClipData.newPlainText(null, it))
-                                Thread.sleep(60)
-                            }
-                            Handler(Looper.getMainLooper()).post {
-                                Toast.makeText(
-                                    ctx,
-                                    moduleAppResources.getString(R.string.toast_copyall_success),
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
-                        }
-                    }
+                val bus by lazy {
+                    callStaticMethod(
+                        "org.greenrobot.eventbus.EventBus".toClass(),
+                        "getDefault"
+                    )
+                }
+                callMethod(bus, "post", event)
+            }
 
-                    field {
-                        name = "mCopy"
-                    }.get(instance).cast<TextView>()?.setOnLongClickListener {
-                        val ctx by lazy { it.context }
-                        val words = field { name = "mSegmentAdapter" }.get(instance)
-                            .current()!!.method {
-                                emptyParam()
-                                name = "getSelectedWordsWithSplit"
-                            }.string().split(Regex.fromLiteral("||"))
-                        copyAll(ctx, words)
-                        closeTaplus(ctx)
-                        true
+            fun copyAll(ctx: Context, words: List<String>) {
+                val cm by lazy {
+                    ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                }
+                thread {
+                    words.forEach {
+                        cm.setPrimaryClip(ClipData.newPlainText(null, it))
+                        Thread.sleep(60)
+                    }
+                    Handler(Looper.getMainLooper()).post {
+                        Toast.makeText(
+                            ctx,
+                            moduleAppResources.getString(R.string.toast_copyall_success),
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
                 }
             }
 
+            instance.current().field {
+                name = "mCopy"
+            }.cast<TextView>()?.setOnLongClickListener {
+                val ctx by lazy { it.context }
+                val words = instance.current().field { name = "mSegmentAdapter" }
+                    .current()!!.method {
+                        emptyParam()
+                        name = "getSelectedWordsWithSplit"
+                    }.string().split(Regex.fromLiteral("||"))
+                copyAll(ctx, words)
+                closeTaplus(ctx)
+                true
+            }
+        }
+
+        fun HookParam.removeSpaceForSelectedWords(): String? = instance.current()
+            .field { name = "mSegmentAdapter" }.current()!!.method {
+                param(StringClass)
+                name = "getSelectedWordsWithSplit"
+            }.invoke<String>("")
+
+        "$packageName.text.cardview.TaplusRecognitionExpandedTextCard".hook {
+            injectMember {
+                constructor { param(ContextClass, AttributeSetClass, IntType) }
+                afterHook { addCopyAll() }
+            }
             injectMember {
                 method { name = "getSelectedWordsWithBlank"; emptyParam() }
-                replaceAny {
-                    field { name = "mSegmentAdapter" }.get(instance).current()!!.method {
-                        param(StringClass)
-                        name = "getSelectedWordsWithSplit"
-                    }.call("")
-                }
+                replaceAny { removeSpaceForSelectedWords() }
+            }
+        }
+
+        fun HookParam.removeShopping() {
+            instance.current().field {
+                name = "mShopping"
+            }.cast<TextView>()?.visibility = View.GONE
+        }
+
+        "$packageName.text.cardview.TaplusRecognitionExpandedImageCard".hook {
+            injectMember {
+                constructor { param(ContextClass, AttributeSetClass, IntType) }
+                afterHook { if (PREF.isRemoveShooping(args(0).cast<Context>()!!)) removeShopping() }
             }
         }
     }

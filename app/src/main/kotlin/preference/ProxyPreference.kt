@@ -10,22 +10,23 @@ import hooker.SettingsHoker.toClass
 /**
  * Created by qingyu on 2023-05-08.
  */
-internal abstract class ProxyPreference(ctx: Context?, pkg: String, name: String) {
+internal abstract class ProxyPreference(
+    ctx: Context?,
+    pkg: String,
+    name: String,
+    type: String = "Preference"
+) {
 
     private val mInstance: Any
 
     init {
-        mInstance = newInstance("${pkg}x.preference.${name}Preference".toClass(), ctx, null)
+        mInstance = newInstance("${pkg}x.preference.${name}$type".toClass(), ctx, null)
     }
 
     fun get() = mInstance
 
     fun setKey(key: CharSequence) {
         "mKey".setField(key)
-    }
-
-    fun setOrder(order: Int) {
-        "setOrder".callInstanceMethod(order)
     }
 
     fun setTitle(title: CharSequence) {
@@ -35,8 +36,6 @@ internal abstract class ProxyPreference(ctx: Context?, pkg: String, name: String
     fun setVisible(visible: Boolean) {
         "setVisible".callInstanceMethod(visible)
     }
-
-    fun getValue(): String? = "getValue".callInstanceMethod() as? String
 
     private fun String.setField(value: Any?) = setObjectField(mInstance, this, value)
 

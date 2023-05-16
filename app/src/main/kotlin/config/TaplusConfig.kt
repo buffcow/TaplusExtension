@@ -8,12 +8,18 @@ import android.content.Context
  */
 internal object TaplusConfig {
     object PREF {
+        const val EXT_CATEGORY = "pref_ext_category"
         const val SEARCH_ENGINE = "pref_search_engine"
         const val CUSTOM_SEARCH = "pref_custom_search"
+        const val REMOVE_SHOPPING = "pref_remove_shopping"
         const val ENABLE_LANDSCAPE = "pref_enable_landscape"
 
         fun isEnableLandscape(context: Context): Boolean {
             return context.getPref().getBoolean(ENABLE_LANDSCAPE, false)
+        }
+
+        fun isRemoveShooping(context: Context): Boolean {
+            return context.getPref().getBoolean(REMOVE_SHOPPING, false)
         }
 
         fun getSearchEngineValue(context: Context): String {
