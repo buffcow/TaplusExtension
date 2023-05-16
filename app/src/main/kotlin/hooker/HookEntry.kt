@@ -1,12 +1,10 @@
-package io.github.yangyiyu08.taplusext
+package hooker
 
 import com.highcapable.yukihookapi.annotation.xposed.InjectYukiHookWithXposed
 import com.highcapable.yukihookapi.hook.factory.configs
 import com.highcapable.yukihookapi.hook.factory.encase
 import com.highcapable.yukihookapi.hook.xposed.proxy.IYukiHookXposedInit
-import hooker.RecognitionHooker
-import hooker.SettingsHoker
-import hooker.UtilsHoker
+import io.github.yangyiyu08.taplusext.BuildConfig
 
 
 //
