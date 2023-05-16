@@ -16,23 +16,24 @@ internal object TaplusConfig {
             return context.getPref().getBoolean(ENABLE_LANDSCAPE, false)
         }
 
-        fun getSearchEngineUrl(context: Context): String? {
-            return when (val engine = getSearchEngineValue(context)) {
-                ENGINE.CUSTOM -> getCustomSearchValue(context)?.takeIf {
-                    it.isNotBlank() && it.contains("%s") && it.startsWith("http")
-                }
-
-                ENGINE.DEFAULT -> null
-                else -> engine
-            }
-        }
-
         fun getSearchEngineValue(context: Context): String {
             return context.getPref().getString(SEARCH_ENGINE, ENGINE.DEFAULT)!!
         }
 
         fun getCustomSearchValue(context: Context): String? {
             return context.getPref().getString(CUSTOM_SEARCH, ENGINE.CUSTOM_URL_EXAMPLE)
+        }
+
+        fun getSearchEngineUrl(context: Context): String? {
+            return when (val engine = getSearchEngineValue(context)) {
+                ENGINE.DEFAULT -> null
+
+                ENGINE.CUSTOM -> getCustomSearchValue(context)?.takeIf {
+                    it.isNotBlank() && it.contains("%s") && it.startsWith("http")
+                }
+
+                else -> engine
+            }
         }
 
         private fun Context.getPref() = lazy {
