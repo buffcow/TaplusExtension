@@ -8,6 +8,6 @@ import android.content.Context
  */
 internal class EditTextPreference(ctx: Context?) : ProxyPreference(ctx, "android", "EditText") {
     fun setText(text: String?) {
-        text?.let { "setText".invokeMethod(it) }
+        text?.let { "setText".callInstanceMethod(it) }
     }
 }

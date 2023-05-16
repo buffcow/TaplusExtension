@@ -25,20 +25,21 @@ internal abstract class ProxyPreference(ctx: Context?, pkg: String, name: String
     }
 
     fun setOrder(order: Int) {
-        "setOrder".invokeMethod(order)
+        "setOrder".callInstanceMethod(order)
     }
 
     fun setTitle(title: CharSequence) {
-        "setTitle".invokeMethod(title)
+        "setTitle".callInstanceMethod(title)
     }
 
     fun setVisible(visible: Boolean) {
-        "setVisible".invokeMethod(visible)
+        "setVisible".callInstanceMethod(visible)
     }
 
-    fun getValue(): String? = "getValue".invokeMethod() as? String
+    fun getValue(): String? = "getValue".callInstanceMethod() as? String
 
     private fun String.setField(value: Any?) = setObjectField(mInstance, this, value)
 
-    protected fun String.invokeMethod(vararg args: Any?): Any? = callMethod(mInstance, this, *args)
+    protected fun String.callInstanceMethod(vararg args: Any?): Any? =
+        callMethod(mInstance, this, *args)
 }

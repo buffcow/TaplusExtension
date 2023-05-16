@@ -10,18 +10,18 @@ import java.lang.reflect.Proxy
  */
 internal class DropDownPreference(ctx: Context?) : ProxyPreference(ctx, "miui", "DropDown") {
     fun setValue(value: String) {
-        "setValue".invokeMethod(value)
+        "setValue".callInstanceMethod(value)
     }
 
     fun setEntries(entries: Array<String>) {
-        "setEntries".invokeMethod(entries)
+        "setEntries".callInstanceMethod(entries)
     }
 
     fun setEntryValues(entryValues: Array<String>) {
-        "setEntryValues".invokeMethod(entryValues)
+        "setEntryValues".callInstanceMethod(entryValues)
     }
 
-    fun setOnPreferenceChangeListener(listener: (value: String) -> Unit) {
+    inline fun setOnPreferenceChangeListener(crossinline listener: (value: String) -> Unit) {
         val loader = get().javaClass.classLoader
         val interfaces = arrayOf(
             "androidx.preference.Preference\$OnPreferenceChangeListener".toClass(loader)
@@ -30,6 +30,6 @@ internal class DropDownPreference(ctx: Context?) : ProxyPreference(ctx, "miui", 
             listener(args[1] as String)
             true
         }
-        "setOnPreferenceChangeListener".invokeMethod(proxyListener)
+        "setOnPreferenceChangeListener".callInstanceMethod(proxyListener)
     }
 }
