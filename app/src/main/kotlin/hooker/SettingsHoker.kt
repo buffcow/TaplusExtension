@@ -6,6 +6,7 @@ import com.highcapable.yukihookapi.hook.type.java.BooleanType
 import config.TaplusConfig.ENGINE
 import config.TaplusConfig.PREF
 import de.robv.android.xposed.XposedHelpers.callMethod
+import de.robv.android.xposed.XposedHelpers.getObjectField
 import io.github.yangyiyu08.taplusext.R
 import preference.CheckBoxPreference
 import preference.DropDownPreference
@@ -27,7 +28,10 @@ internal object SettingsHoker : YukiBaseHooker() {
                     }
 
                     val ctx by lazy {
-                        callMethod(instance, "getContext") as Context
+                        callMethod(
+                            getObjectField(instance, "mCommonSettingsCategory"),
+                            "getContext"
+                        ) as Context
                     }
 
                     val extCategory = createTaplusExtCategory(ctx)
@@ -42,11 +46,12 @@ internal object SettingsHoker : YukiBaseHooker() {
             injectMember {
                 method { name = "enablePrefConfig"; param(BooleanType) }
                 afterHook {
-                    val screen = callMethod(instance, "findPreference", PREF.EXT_CATEGORY)
-                    val count = callMethod(screen, "getPreferenceCount") as Int
-                    for (i in 0 until count) {
-                        val pref = callMethod(screen, "getPreference", i)
-                        callMethod(pref, "setEnabled", args(0).boolean())
+                    callMethod(instance, "findPreference", PREF.EXT_CATEGORY)?.let { screen ->
+                        val count = callMethod(screen, "getPreferenceCount") as Int
+                        for (i in 0 until count) {
+                            val pref = callMethod(screen, "getPreference", i)
+                            callMethod(pref, "setEnabled", args(0).boolean())
+                        }
                     }
                 }
             }
