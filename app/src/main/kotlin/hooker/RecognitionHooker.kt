@@ -3,6 +3,7 @@ package hooker
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import android.os.Handler
 import android.os.Looper
 import android.view.View
@@ -107,6 +108,49 @@ internal object RecognitionHooker : YukiBaseHooker() {
             }
         }
 
+        fun HookParam.addShare() {
+            fun shareText(ctx: Context, text: String) {
+                val intent by lazy {
+                    newInstance(
+                        "android.content.Intent".toClass(),
+                        "android.intent.action.SEND"
+                    )
+                }
+                callMethod(intent, "setType", "text/plain")
+                callMethod(intent, "putExtra", "android.intent.extra.TEXT", text)
+                callMethod(intent, "setFlags", Intent.FLAG_ACTIVITY_NEW_TASK)
+                callMethod(ctx, "startActivity", intent)
+            }
+
+            instance.current().field {
+                name = "mSelectAll"
+            }.cast<TextView>()?.setOnLongClickListener {
+                val ctx by lazy { it.context }
+                val selectedNumber = instance.current().method {
+                    emptyParam()
+                    name = "getSelectedNumber"
+                }.invoke<Int>()!!
+                val mSegmentAdapter =
+                    instance.current().field { name = "mSegmentAdapter" }.current()!!
+                if (selectedNumber > 0) {
+                    // partial share
+                    val word = mSegmentAdapter.method {
+                        emptyParam()
+                        name = "getSelectedWordsWithSplit"
+                    }.string().replace(Regex.fromLiteral("||"), "")
+                    shareText(ctx, word)
+                } else {
+                    // nothing selected, share all
+                    val segments = mSegmentAdapter.field { name = "mSegments" }.list<Any>()
+                    val word = segments.joinToString(separator = "") {
+                        it.current().field { name = "word" }.string()
+                    }
+                    shareText(ctx, word)
+                }
+                true
+            }
+        }
+
         fun HookParam.removeSpaceForSelectedWords(): String? = instance.current()
             .field { name = "mSegmentAdapter" }.current()!!.method {
                 param(StringClass)
@@ -116,11 +160,38 @@ internal object RecognitionHooker : YukiBaseHooker() {
         "$packageName.text.cardview.TaplusRecognitionExpandedTextCard".hook {
             injectMember {
                 constructor { param(ContextClass, AttributeSetClass, IntType) }
-                afterHook { addCopyAll() }
+                afterHook {
+                    addCopyAll()
+                    addShare()
+                }
             }
             injectMember {
                 method { name = "getSelectedWordsWithBlank"; emptyParam() }
                 replaceAny { removeSpaceForSelectedWords() }
+            }
+
+            // always enable: search, copy, translate
+            injectMember {
+                method { name = "enableTextView" }
+                beforeHook {
+                    args[1] = true
+                }
+            }
+        }
+
+        "$packageName.text.adapter.TaplusSegmentAdapter".hook {
+            injectMember {
+                method { name = "getSelectedWords" }
+                beforeHook {
+                    //if not selected return all, else original
+                    if (instance.current().method { name = "getSelectedCount"; emptyParam() }
+                            .invoke<Int>() == 0) {
+                        val segments = instance.current().field { name = "mSegments" }.list<Any>()
+                        result = segments.joinToString(separator = "") {
+                            it.current().field { name = "word" }.string()
+                        }
+                    }
+                }
             }
         }
 
