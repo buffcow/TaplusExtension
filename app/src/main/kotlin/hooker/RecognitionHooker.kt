@@ -110,16 +110,11 @@ internal object RecognitionHooker : YukiBaseHooker() {
 
         fun HookParam.addShare() {
             fun shareText(ctx: Context, text: String) {
-                val intent by lazy {
-                    newInstance(
-                        "android.content.Intent".toClass(),
-                        "android.intent.action.SEND"
-                    )
-                }
-                callMethod(intent, "setType", "text/plain")
-                callMethod(intent, "putExtra", "android.intent.extra.TEXT", text)
-                callMethod(intent, "setFlags", Intent.FLAG_ACTIVITY_NEW_TASK)
-                callMethod(ctx, "startActivity", intent)
+                ctx.startActivity(Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    putExtra(Intent.EXTRA_TEXT, text)
+                })
             }
 
             instance.current().field {
